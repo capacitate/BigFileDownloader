@@ -4,27 +4,40 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.EditText;
-import android.widget.TextView;
-import android.widget.Toast;
+import android.view.View;
+import android.widget.Button;
+import android.widget.ListView;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity{
 
-    public Thread LoadTxtParsing = null;
+    //DATA
+    private String[][] items;
+    private URL url;
+
+    //ListView
+    private ArrayList<Download> list;
+    private ListAdapter myAdapter;
+    private Context selfContext = this;
+
+    //UI
+    private ListView download_list;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -34,68 +47,27 @@ public class MainActivity extends AppCompatActivity {
         //TODO wouldn't it be better to make text box and able to enter the URL then loading the page
         //TODO But the default work should be loading the designated URL then parsing
 
-        int number = 0;
-
-        LoadTxtParsing = new LoadTxt();
-
-        /*
-        LoadTxtParsing = new Thread(new Runnable(){
-            public void run(){
-                URL url = null;
-                InputStream in = null;
-
-                try{    //It is the default work
-                    url = new URL("http://nmsl.kaist.ac.kr/2015fall/cs492c/hw1/input.txt");
-                    URLConnection urlConnection = url.openConnection();
-                    in = new BufferedInputStream(urlConnection.getInputStream());
-                }catch (MalformedURLException e){
-                    //do whatever
-                }catch(IOException e){
-                    //do whatever
-                }
-                try {
-                    final String returned = readStream(in);
-                    final TextView tView = (TextView) findViewById(R.id.text);
-                    tView.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(getBaseContext(),
-                                    "Web page downloaded successfully", Toast.LENGTH_SHORT)
-                                    .show();
-                            tView.setText(returned);
-                        }
-                    });
-
-                    //from below code what we can obtain how many of items are stored in the txt
-                    //TODO parse each line with "\t", then can obtain the
-                    final String[] separated = returned.split("\n");
-
-                    tView.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(getBaseContext(),
-                                    "Parsing", Toast.LENGTH_SHORT)
-                                    .show();
-                            tView.setText(separated[1]);
-                        }
-                    });
-
-                }finally {
-                    try{
-                        in.close();
-                    }catch(IOException e){
-                        //do whatever
-                    }
-                }
-            }
-        });
-        */
-
-        LoadTxtParsing.start();
+        //TODO employing Button, When click the Button simultaneous downloading are started
+        //TODO several approaches are possible
 
 
+        //TODO with AsyncTask finish loading and update the listview
+        //TODO select download path
 
-    }it
+        list = new ArrayList<Download>();
+
+        //parse from the URL
+        try {
+            url = new URL("http://nmsl.kaist.ac.kr/2015fall/cs492c/hw1/input.txt");
+            Load parse = new Load();
+            parse.execute(url);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
     private boolean isNetworkAvailable() {
         boolean available = false;
         ConnectivityManager connMgr =
@@ -104,50 +76,6 @@ public class MainActivity extends AppCompatActivity {
         if (networkInfo != null && networkInfo.isAvailable())
             available = true;
         return available;
-    }
-
-    private String downloadUrl(String strUrl) throws IOException {
-        String s = null;
-        byte[] buffer = new byte[1000];
-        InputStream iStream = null;
-        try {
-            URL url = new URL(strUrl);
-            HttpURLConnection urlConnection = (HttpURLConnection) url
-                    .openConnection();
-            urlConnection.connect();
-            iStream = urlConnection.getInputStream();
-            iStream.read(buffer);
-            s = new String(buffer);
-        } catch (Exception e) {
-            Log.d("Exception while downloading url", e.toString());
-        } finally {
-            iStream.close();
-        }
-        return s;
-    }
-
-    private class DownloadTask extends AsyncTask<String, Integer, String> {
-        String s = null;
-
-        protected String doInBackground(String... url) {
-            try {
-                s = downloadUrl(url[0]);
-            } catch (Exception e) {
-                Log.d("Background Task", e.toString());
-            }
-            return s;
-        }
-
-        protected void onPostExecute(String result) {
-            TextView tView = (TextView) findViewById(R.id.text);
-            tView.setText(result);
-            Toast.makeText(getBaseContext(),
-                    "Web page downloaded successfully", Toast.LENGTH_SHORT)
-                    .show();
-            Toast.makeText(getBaseContext(),
-                    result, Toast.LENGTH_SHORT)
-                    .show();
-        }
     }
 
     @Override
@@ -172,80 +100,77 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    class LoadTxt extends Thread{
 
-        public String returned = null;
-        public int number = 0;
+    //Load contents from designated URL
+    private class Load extends AsyncTask<URL, Integer, Long> {
 
-        @Override
-        public void run(){
-            super.run();
-            URL url = null;
-            InputStream in = null;
+        //file download
+        private URL url;
+        private InputStream in;
 
+        //data
+        private String returned;
+
+        private String readStream(InputStream is) {
+            try {
+                ByteArrayOutputStream bo = new ByteArrayOutputStream();
+                int i = is.read();
+                while(i != -1) {
+                    bo.write(i);
+                    i = is.read();
+                }
+                return bo.toString();
+            } catch (IOException e) {
+                return "";
+            }
+        }
+
+        protected Long doInBackground(URL... urls) {
             try{    //It is the default work
-                url = new URL("http://nmsl.kaist.ac.kr/2015fall/cs492c/hw1/input.txt");
+                url = (URL)urls[0];
                 URLConnection urlConnection = url.openConnection();
                 in = new BufferedInputStream(urlConnection.getInputStream());
-            }catch (MalformedURLException e){
-                //do whatever
-            }catch(IOException e){
-                //do whatever
-            }
-            try {
+
                 //final String returned = readStream(in);
                 returned = readStream(in);
-                final TextView tView = (TextView) findViewById(R.id.text);
-                tView.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(getBaseContext(),
-                                "Web page downloaded successfully", Toast.LENGTH_SHORT)
-                                .show();
-                        tView.setText(returned);
-                    }
-                });
 
                 //from below code what we can obtain how many of items are stored in the txt
-                //TODO parse each line with "\t", then can obtain the
-                final String[] separated = returned.split("\n");
-                number = separated.length;
+                String[] separated = returned.split("\n");
 
-                tView.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(getBaseContext(),
-                                "Parsing", Toast.LENGTH_SHORT)
-                                .show();
-                        tView.setText(separated[1]);
-                    }
-                });
+                items = new String[2][separated.length];
 
-            }finally {
-                try{
-                    in.close();
-                }catch(IOException e){
-                    //do whatever
+
+                for(int i = 0; i < separated.length; i++){
+                    String[] temp = separated[i].split("\t");
+                    items[0][i] = temp[0].trim();   //file name
+                    items[1][i] = temp[1].trim();   //url
+                    list.add(new Download(items[0][i], items[1][i]));
                 }
+
+                for(int i = 0; i < items[0].length; i++)
+                    Log.d("NAME", items[0][i]);
+
+                for(int i = 0; i < items[1].length; i++)
+                    Log.d("URL", items[1][i]);
+
+                //TODO parse each line with "\t", then can obtain the
+                in.close();
+            } catch (MalformedURLException e){
+                e.printStackTrace();
+            } catch(IOException e){
+                e.printStackTrace();
             }
+            return null;
         }
 
-        public int getNumber(){
-            return number;
+        @Override
+        protected void onPostExecute(Long result) {
+
+            myAdapter = new ListAdapter(list, selfContext);
+            download_list = (ListView)findViewById(R.id.list);
+            download_list.setAdapter(myAdapter);
         }
     }
 
-    private String readStream(InputStream is) {
-        try {
-            ByteArrayOutputStream bo = new ByteArrayOutputStream();
-            int i = is.read();
-            while(i != -1) {
-                bo.write(i);
-                i = is.read();
-            }
-            return bo.toString();
-        } catch (IOException e) {
-            return "";
-        }
-    }
+
 }

@@ -1,6 +1,20 @@
 <resources>
     <string name="app_name">Big_file_downloader</string>
 
-    <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
+
+    <!--Main Activity-->
+    <string name="start_download">Start Download</string>
+
+    <!--List item-->
+    <string name="start">Start</string>
+    <string name="retry">Retry</string>
+    <string name="open">Open</string>
+    <string name="receive">Receive</string>
+    <string name="filename">filename</string>
+    <string name="colon">:</string>
+    <string name="slash">/</string>
+    <string name="total">Total</string>
+    <string name="unit">(KB)</string>
+
 </resources>
