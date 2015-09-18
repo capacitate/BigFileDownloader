@@ -13,7 +13,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
@@ -37,6 +39,9 @@ public class MainActivity extends AppCompatActivity{
 
     //UI
     private ListView download_list;
+    static private TextView status;
+    private Button connect;
+    private EditText input_url;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,11 +61,36 @@ public class MainActivity extends AppCompatActivity{
 
         list = new ArrayList<Download>();
 
+        status = (TextView) findViewById(R.id.statusTxt);
+        connect = (Button) findViewById(R.id.connectBtn);
+        input_url = (EditText) findViewById(R.id.download_url);
+
+        connect.setOnClickListener(new View.OnClickListener(){
+
+            @Override
+            public void onClick(View v) {
+                list.clear();
+                if(isNetworkAvailable()){
+                    try {
+                        url = new URL(input_url.getText().toString());
+                        Load parse = new Load();
+                        parse.execute(url);
+                    } catch (MalformedURLException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+
         //parse from the URL
         try {
-            url = new URL("http://nmsl.kaist.ac.kr/2015fall/cs492c/hw1/input.txt");
-            Load parse = new Load();
-            parse.execute(url);
+            if(isNetworkAvailable()) {
+                url = new URL("http://nmsl.kaist.ac.kr/2015fall/cs492c/hw1/input.txt");
+                Load parse = new Load();
+                parse.execute(url);
+            } else {
+                status.setText("Please turn on the network");
+            }
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
@@ -73,8 +103,21 @@ public class MainActivity extends AppCompatActivity{
         ConnectivityManager connMgr =
                 (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+
+        NetworkInfo wifi = connMgr.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+        NetworkInfo data = connMgr.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
+
         if (networkInfo != null && networkInfo.isAvailable())
             available = true;
+
+        if(available){
+            if(wifi.isConnectedOrConnecting()){
+                status.setText("WIFI network is connected");
+            }
+            if(data.isConnectedOrConnecting()){
+                status.setText("DATA network is connected");
+            }
+        }
         return available;
     }
 
@@ -172,5 +215,7 @@ public class MainActivity extends AppCompatActivity{
         }
     }
 
-
+    static public void setStatus(String txt){
+        status.setText(txt);
+    }
 }

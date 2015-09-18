@@ -15,14 +15,30 @@
         -->
 
     <TextView
-        android:id="@+id/HelloTxt"
+        android:id="@+id/statusTxt"
         android:text="@string/app_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         />
 
+    <Button
+        android:id="@+id/connectBtn"
+        android:text="@string/connect"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/statusTxt"/>
+
+    <EditText
+        android:id="@+id/download_url"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollHorizontally="true"
+        android:layout_below="@+id/statusTxt"
+        android:text="@string/default_rul"
+        android:layout_toRightOf="@+id/connectBtn"/>
+
     <ListView
-        android:layout_below="@+id/HelloTxt"
+        android:layout_below="@+id/connectBtn"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:id="@+id/list"

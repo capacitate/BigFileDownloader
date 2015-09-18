@@ -13,7 +13,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.Button;
-import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -44,20 +43,6 @@ public class ListAdapter extends BaseAdapter implements android.widget.ListAdapt
     private final double KBUNIT = 1024;
     private final int ROUNDUP = 100;
     private final String DEFAULT_PATH = "/sdcard/Download/";
-
-    public class Holder{
-        Button start_btn;
-        Button retry_btn;
-        Button open_btn;
-
-        TextView filename;
-        TextView receive;
-        TextView total;
-
-        ProgressBar progress;
-
-        Download item;
-    }
 
     public ListAdapter(ArrayList<Download> plist, Context pcontext){
         list = plist;
@@ -114,32 +99,40 @@ public class ListAdapter extends BaseAdapter implements android.widget.ListAdapt
 
         holder.progress.setProgress(file.getmProgress());
         file.setProgressBar(holder.progress);
+        holder.progress.setMax(10);
 
         final Holder holderT = holder;  //in order to handover subclass
-
+        final Button retry_btn = holder.retry_btn;
+        final Button open_btn = holder.open_btn;
         final Button start_btn = holder.start_btn;
+
         holder.start_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 start_btn.setEnabled(false);
                 start_btn.invalidate();
 
+                open_btn.setEnabled(false);
+                retry_btn.setEnabled(false);
+
                 startMultiDown(file, holderT);
             }
         });
 
-        final Button retry_btn = holder.retry_btn;
         holder.retry_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 retry_btn.setEnabled(false);
                 retry_btn.invalidate();
 
+                start_btn.setEnabled(false);
+                retry_btn.setEnabled(false);
+                open_btn.setEnabled(false);
+
                 startMultiDown(file, holderT);
             }
         });
 
-        final Button open_btn = holder.open_btn;
         holder.open_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -196,10 +189,19 @@ public class ListAdapter extends BaseAdapter implements android.widget.ListAdapt
         private Download file;
         private Holder view_holder;
         private long total;
+        private long filesize;
         public DownloadFileAsync(Download pfile, Holder pholder){ file = pfile; view_holder = pholder; }
 
         @Override
+        protected void onPreExecute(){
+            ProgressBar bar = file.getProgressBar();
+            file.setmProgress(0);
+            bar.setProgress(0);
+        }
+
+        @Override
         protected void onProgressUpdate(String... progress) {
+            MainActivity.setStatus("Start Downloading..");
             file.setmProgress(Integer.parseInt(progress[0]));
             ProgressBar bar = file.getProgressBar();
 
@@ -223,7 +225,7 @@ public class ListAdapter extends BaseAdapter implements android.widget.ListAdapt
                 URLConnection conexion = url.openConnection();
                 conexion.connect();
 
-                long filesize = conexion.getContentLength();
+                filesize = conexion.getContentLength();
                 file.setFilesize(filesize);
 
                 Log.d("FILESIZE", file.getFilename() + " size :" + filesize);
@@ -237,7 +239,7 @@ public class ListAdapter extends BaseAdapter implements android.widget.ListAdapt
 
                 while((count = input.read(data)) != -1){
                     total = (total + count);
-                    publishProgress("" + (int)(total * 100) / (filesize));
+                    publishProgress("" + (int)(total * 10) / (filesize));
                     output.write(data, 0, count);
                 }
 
@@ -248,6 +250,8 @@ public class ListAdapter extends BaseAdapter implements android.widget.ListAdapt
             } catch (MalformedURLException e) {
                 e.printStackTrace();
             } catch (IOException e) {
+                File downloaded = new File(DEFAULT_PATH + file.getFilename());
+                downloaded.delete();
                 e.printStackTrace();
             }
 
@@ -256,12 +260,20 @@ public class ListAdapter extends BaseAdapter implements android.widget.ListAdapt
 
         @Override
         protected void onPostExecute(String result) {
-            view_holder.retry_btn.setEnabled(true);
-            view_holder.open_btn.setEnabled(true);
+            MainActivity.setStatus("finish the download");
+            if(total != filesize) {
+                ReDownloadAsync retry = new ReDownloadAsync(context, inflater, file, view_holder);
+                retry.execute();
 
-            //TODO open with default luncher
-            Toast.makeText(context, file.getFilename() + " 다운로드 완료 open!", Toast.LENGTH_SHORT).show();
-            viewFile(DEFAULT_PATH + file.getFilename(), file.getFilename());
+                view_holder.start_btn.setEnabled(true);
+            } else {
+                view_holder.retry_btn.setEnabled(true);
+                view_holder.open_btn.setEnabled(true);
+
+                //TODO open with default luncher
+                Toast.makeText(context, file.getFilename() + " 다운로드 완료 open!", Toast.LENGTH_SHORT).show();
+                viewFile(DEFAULT_PATH + file.getFilename(), file.getFilename());
+            }
         }
     }
 }

@@ -17,4 +17,8 @@
     <string name="total">Total</string>
     <string name="unit">(KB)</string>
 
+    <!--Connect BTN-->
+    <string name="default_rul">http://nmsl.kaist.ac.kr/2015fall/cs492c/hw1/input.txt</string>
+    <string name="connect">Connect</string>
+
 </resources>
