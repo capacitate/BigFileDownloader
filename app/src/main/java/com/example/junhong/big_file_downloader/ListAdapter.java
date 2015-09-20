@@ -190,6 +190,7 @@ public class ListAdapter extends BaseAdapter implements android.widget.ListAdapt
         private Holder view_holder;
         private long total;
         private long filesize;
+        private boolean connected = false;
         public DownloadFileAsync(Download pfile, Holder pholder){ file = pfile; view_holder = pholder; }
 
         @Override
@@ -246,6 +247,7 @@ public class ListAdapter extends BaseAdapter implements android.widget.ListAdapt
                 output.flush();
                 output.close();
                 input.close();
+                connected = true;
                 Log.d("FILESIZE", file.getFilename() + " done" + filesize);
             } catch (MalformedURLException e) {
                 e.printStackTrace();
@@ -265,6 +267,9 @@ public class ListAdapter extends BaseAdapter implements android.widget.ListAdapt
                 ReDownloadAsync retry = new ReDownloadAsync(context, inflater, file, view_holder);
                 retry.execute();
 
+                view_holder.start_btn.setEnabled(true);
+            } else if( !connected ){
+                MainActivity.setStatus("please connect on the Internet");
                 view_holder.start_btn.setEnabled(true);
             } else {
                 view_holder.retry_btn.setEnabled(true);

@@ -81,9 +81,7 @@ public class ReDownloadAsync extends AsyncTask<String, String, String> {
 
     @Override
     protected void onPreExecute(){
-        ProgressBar bar = file.getProgressBar();
-        bar.setMax(10);
-        bar.setProgress(0);
+
     }
 
     @Override
@@ -91,6 +89,7 @@ public class ReDownloadAsync extends AsyncTask<String, String, String> {
         MainActivity.setStatus("Retry Downloading..");
         file.setmProgress(Integer.parseInt(progress[0]));
         ProgressBar bar = file.getProgressBar();
+        bar.setProgress(0);
 
         if( bar != null){
             bar.setProgress( file.getmProgress() );
@@ -134,7 +133,7 @@ public class ReDownloadAsync extends AsyncTask<String, String, String> {
 
                 while ((count = input.read(data)) != -1) {
                     total = (total + count);
-                    publishProgress("" + (int) (total * 100) / (filesize));
+                    publishProgress("" + (int) (total * 10) / (filesize));
                     output.write(data, 0, count);
                 }
 
